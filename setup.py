@@ -60,7 +60,7 @@ setup(
     license  = 'BSD',
 
     description      = 'Toolkit to quickly create readable, user-friendly CLI interfaces with automatic shell-autocompletion',
-    long_description = read('{pkgname}/README.rst'.format(**locals())),
+    long_description = read('README.rst'.format(**locals())),
 
     keywords         = 'supercli cli color colour argparse logging interface',
     install_requires = ['colorama','pygments','six'],
