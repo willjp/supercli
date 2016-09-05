@@ -91,6 +91,10 @@ the format above:
                )
 
 
+.. code-block:: bash
+
+   myprogram --regen-autocomplete .           ## create autocompleter in current dir
+
 
 
 argparse
