@@ -105,24 +105,6 @@ This is just a collection of subclasses of the real `argparse` module,
 and the usage is mostly the same.
 
 
-
-Minimal use:
-````````````
-.. code-block:: python
-
-   from supercli.argparse import ArgumentParser
-
-
-   parser = ArgumentParser(
-               cli_command = 'myprogram',     ## name of command autocompletions are generated for
-               description = 'This descriptions can have `ReStructuredText` in it.',
-               )
-
-
-
-The works:
-``````````
-
 .. code-block:: python
 
    from supercli.argparse    import ArgumentParser
