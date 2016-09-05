@@ -24,13 +24,11 @@ than gluing together a sane collection of defaults to quickly get you up and run
 
 .. image:: images/coloured_argparse.png
    :align: center
-   :width: 600px
 
 
 
 .. image:: images/coloured_logging.png
    :align: center
-   :width: 600px
 
 
 

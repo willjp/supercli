@@ -2,12 +2,25 @@
 TODO
 ====
 
+* needs setup.py
 
 * logging.SetLog() needs a modular way of setting
   logs in different environments (like maya, mayapy, etc)
 
-* learn how to properly use submodules.
-  just testing.
+* Logging.WhiteList should use fnmatch on the path/func like
+  logging does.
 
+* Whitelist/Blacklist must be able to be used together.
+
+* unittests
+
+* look into bash autocompletion scripts
+
+* after reading up on bash autocompletion, make use of nargs,
+  and introduce a new add_argument() option that determines
+  the type of argument that it expects.
+
+  file, normal, internet iface, etc.
+  ZSH has all of this, I'm not sure about other shells..
 
 
