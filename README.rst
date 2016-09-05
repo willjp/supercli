@@ -27,9 +27,11 @@ than gluing together a sane collection of defaults to quickly get you up and run
    :width: 600px
 
 
+
 .. image:: images/coloured_logging.png
    :align: center
    :width: 600px
+
 
 
 ______________________________________________________________________________
@@ -49,8 +51,8 @@ ______________________________________________________________________________
 Features
 --------
 
-argparse
-........
+argparse tweaks
+................
 * Automatically generate ZSH autocompletion scripts (supports subarsers)
 * ReStructuredText syntax-highlighting within helplines
 * newlines, and ANSI colours can be used in helplines (on windows too)
@@ -62,12 +64,13 @@ argparse
   (``-f, --file [METAVAR]``  **instead of** ``-f [METAVAR] --file [METAVAR]``)
 * argument flags are coloured `white` to standout from their descriptions.
 
-logging
-.......
+logging tweaks
+...............
 
 * colour-coded logging (on windows too) (borrowed from `unutbu` and `sorin` on stackoverflow)
 * some useful logfilters (borrowed from `unutbu` and `sorin` on stackoverflow)
-* short string-based argument to quickly modify log-verbosity/format
+* reuse existing loghandlers if already built in interactive python shells.
+* short string-based argument to quickly modify log-verbosity/logformat
 
 
 
@@ -135,37 +138,17 @@ The works:
                helpline_lexer     = HtmlLexer,            ## use a different lexer or formatter
                helpline_formatter = Terminal256Formatter, #  if you'd like
 
-               extended_logopts   = True,                 ## enable flags for log options related to logging to files
-               developer_opts     = True,                 ## make `invisible` dev commands visible in help menu for users
+               extended_logopts   = True,                 ## enable flags for log options related to 
+                                                          #  logging to files
+
+               developer_opts     = True,                 ## make `invisible` dev commands visible in 
+                                                          #  help menu for users
 
                loghandlers        = None,                 ## if logformat or loghandlers don't suit your needs
-                                                          #  you can manage and pass your own formatted loghandlers.
-                                                          #  (-v|-vv) flags will stil work (logging.DEBUG/deleting all logfilters)
+                                                          #  you can manage and pass your own formatted 
+                                                          #  loghandlers.
+                                                          #  (-v|-vv) flags will stil work
            )
-
-
-.. code-block:: python
-
-   ##
-   ## everything else is the same
-   ##
-
-   parser.add_argument(
-            '-o','--output', help='Location to write to',
-            metavar='~/mydir'
-            )
-
-   subparsers = parser.add_subparsers( dest='subcmd' )
-   extract    = subparsers.add_parser('extract', help='Extract a file')
-   exctract.add_argument(
-            '-t','--type', help='The type of archive we are extracting from',
-            metavar='tar'
-            )
-
-   ##
-   ## ... etc
-   ##
-
 
 
 
@@ -258,7 +241,10 @@ ex:
       lv             = 'INFO'               ,
       logfile        = '/path/to/myfile.log',
       logstream      = True                 ,
-      filter_matches = ['sqliface.','chatty.module.func'],   ## filters records matching  '*sqliface.*', '*chatty.module.func*' 
+      filter_matches = ['sqliface.','chatty.module.func'],   ## filters records matching  
+                                                             #   '*sqliface.*', 
+                                                             #   '*chatty.module.func*' 
+
       filter_type    = Blacklist,                            ## BlackList is the default
    )
 
