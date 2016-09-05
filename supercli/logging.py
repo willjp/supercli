@@ -11,11 +11,14 @@ ________________________________________________________________________________
 """
 ## builtins
 from   __future__    import unicode_literals
-import colorama
+from   __future__    import absolute_import
 import logging
 import sys
 import re
 import os
+## external
+import colorama
+
 
 loc = locals
 

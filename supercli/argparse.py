@@ -16,6 +16,7 @@ ________________________________________________________________________________
 """
 ## builtins
 from   __future__    import unicode_literals
+from   __future__    import absolute_import
 import sys
 import argparse
 import datetime
@@ -26,7 +27,6 @@ import os
 from   pygments               import highlight
 from   pygments.lexers.markup import RstLexer
 from   pygments.formatters    import TerminalFormatter
-from   genzshcomp             import CompletionGenerator
 import colorama
 ## custom
 from   .logging      import SetLog
