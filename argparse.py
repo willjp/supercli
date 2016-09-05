@@ -41,11 +41,18 @@ PARSER       = 'A...'
 REMAINDER    = '...'
 loc          = locals
 
+#!TODO: --regen-autocomplete not working
+
+#!TODO: argument validation. everywhere.
+
+#!TODO: replace 'logfile_only' with 'log_stdout'
+#!      and ensure that it works when logfile is not enabled.
+
 #!TODO: add autocompletion arg-types to take advantage of
 #!      zsh's _file, _iface, .. etc.
 
 #!TODO: unittests all around...
-class ReadableHelpFormatter(argparse.RawTextHelpFormatter):
+class LegibleHelpFormatter(argparse.RawTextHelpFormatter):
     """
     More Readable, Formattable argparse args help-line.
 
@@ -62,7 +69,7 @@ class ReadableHelpFormatter(argparse.RawTextHelpFormatter):
         http://stackoverflow.com/questions/23936145/python-argparse-help-message-disable-metavar-for-short-options
     """
     def __init__(self,*args,**kwds):
-        super( ReadableHelpFormatter, self ).__init__(*args,**kwds)
+        super( LegibleHelpFormatter, self ).__init__(*args,**kwds)
 
     def _format_action_invocation(self, action):
         white='\033[37m'
@@ -103,8 +110,6 @@ class ReadableHelpFormatter(argparse.RawTextHelpFormatter):
         #return argparse.HelpFormatter._split_lines(self, text, width)
 
         retval = text.splitlines()
-        retval.insert( 0, '')
-        #retval.append('')
         return retval
 
     def _format_args(self, action, default_metavar):
@@ -163,8 +168,11 @@ class _SubparsersProxy(object):
         if 'title' in kwds:  title = kwds['title']
         else:                title = args[0]
 
-        ret_subparser = self.subparsers_obj.add_parser(_default_parser=default_subparser,*args,**kwds)
-
+        ret_subparser = self.subparsers_obj.add_parser(
+                                _default_parser = default_subparser           ,
+                                cli_commandname = self.parser.cli_commandname ,
+                                *args,**kwds
+                              )
 
 
         ## set attributes on subparser
@@ -192,7 +200,7 @@ class ArgumentParser(argparse.ArgumentParser):
     Enhanced ArgumentParser with more Readable arguments, ReStructuredText Colours.
     Also, Newline characters are no longer stripped.
 
-    ArgumentParser Subclass that uses ReadableHelpFormatter by default,
+    ArgumentParser Subclass that uses LegibleHelpFormatter by default,
     and parsers automatically receive arguments to control loglevel.
 
 
@@ -315,26 +323,26 @@ class ArgumentParser(argparse.ArgumentParser):
         self.used_flags       = [] ## stores every flag that has already been used.
 
         self.subparsers_obj   = None ## stores the subparsers obj if one exists
+        self.devargs          = []
 
 
-        ## __init__
-
-        ## Default Parser
+        ## Default argparse.ArgumentParser instance
         if _default_parser:
             self.default_parser = _default_parser
         else:
             self.default_parser   = argparse.ArgumentParser(description=description,*args,**kwds )
 
 
-        ## Readable Parser
+        ## Validation
+        self._validate_args()
+
         description = colourize_text(description,helpline_lexer,helpline_formatter)
-        super( ArgumentParser, self ).__init__(description=description,formatter_class=ReadableHelpFormatter,*args,**kwds )
+        super( ArgumentParser, self ).__init__(description=description,formatter_class=LegibleHelpFormatter,*args,**kwds )
+        self._add_default_arguments()
 
-        #for parser in (self, self.default_parser):
-        self._add_logging_arguments()
-        self._add_pdb_arguments()
-        self._add_parser_arguments()
-
+    def _validate_args(self):
+        if not self.cli_commandname:
+            raise RuntimeError("Missing argument 'cli_commandname' ")
 
     def add_argument(self,*args,**kwds):
 
@@ -366,7 +374,11 @@ class ArgumentParser(argparse.ArgumentParser):
         self.subparsers_obj = _SubparsersProxy(parser=self,default_parser=self.default_parser,*args,**kwds)
         return self.subparsers_obj
 
-    def _add_logging_arguments(self):
+    def _add_default_arguments(self):
+        self._add_default_logging_arguments()
+        self._add_default_dev_arguments()
+
+    def _add_default_logging_arguments(self):
         """
         Adds standardized logging arguments to the provided parser
         """
@@ -380,14 +392,6 @@ class ArgumentParser(argparse.ArgumentParser):
             '-vv', '--very-verbose', help='Same as verbose, except that any applied log-filters are disabled. All information is printed',
             action='store_true',
             )
-
-
-
-        if self.developer_opts:
-            self.add_argument(
-                '--dev', help="Replaces logged-time with the __name__ and line-number\n (useful while debugging)",
-                action='store_true',
-                )
 
 
         if self.extended_logopts:
@@ -410,21 +414,34 @@ class ArgumentParser(argparse.ArgumentParser):
 
         return self
 
-    def _add_pdb_arguments(self):
+    def _add_default_dev_arguments(self,force_create=False):
+        """
+        The developer options are special. They can be used
+        from the commandline even if self.developer_opts is not enabled.
+        ( which has the effect of making them invisible to the user, )
+        ( but still useful to you                                    )
+        """
 
-        self.add_argument(
-            '--pdb', help=('Automatically enters pdb (debugger) in post-mortem mode on crash\n'
-                           '(If available, uses ipdb)'),
-            action='store_true',
-        )
+        ## self.devargs is a list of all developper argument
+        ## flags. If self.developper_opts == False, (so these arguments are not added)
+        ## the developer flags are still available (just hidden from the help menu)
+        self.devargs = [
+            '--devlog','--pdb','--regen-autocomplete','--default-parser'
+        ]
 
-        return self
 
-    def _add_parser_arguments(self):
-
-        if self.developer_opts:
+        if any([ self.developer_opts, (force_create and not self.developer_opts)]):
             self.add_argument(
-                '--regen-autocomplete', help='Regenerate SHELL-specific autocompletion scripts',
+                '--devlog', help="Replaces logged-time with the __name__ and line-number\n (useful while debugging)",
+                action='store_true',
+                )
+            self.add_argument(
+                '--pdb', help=('Automatically enters pdb (debugger) in post-mortem mode on crash\n'
+                               '(If available, uses ipdb)'),
+                action='store_true',
+            )
+            self.add_argument(
+                '--regen-autocomplete', nargs='?', help='Regenerate SHELL-specific autocompletion scripts',
                 metavar = '"cli_program_name"',
             )
 
@@ -432,7 +449,6 @@ class ArgumentParser(argparse.ArgumentParser):
                 '--default-parser', help='Display unmodified argparse output (no colours, changed formatting, etc)',
                 action='store_true',
             )
-
         return self
 
 
@@ -448,12 +464,12 @@ class ArgumentParser(argparse.ArgumentParser):
 
         cliargs = sys.argv
 
-        ## re-generate autocompletion scripts
-        if '--regen-autocomplete' in cliargs:
-            self.create_autocompleters( self.cli_commandname )
-
-        if '--dev' in cliargs:
-            cliargs.dev = True
+        ## enable (hidden) devargs options
+        hidden_devargs_used = False
+        if not any( flag in cliargs   for flag in ('-h','--help') ):
+            if any( flag in cliargs   for flag in self.devargs ):
+                self._add_default_dev_arguments(force_create=True)
+                developer_args_used = True
 
         ## use default-parser on user's request
         if '--default-parser' in cliargs:
@@ -462,23 +478,30 @@ class ArgumentParser(argparse.ArgumentParser):
             args = super( ArgumentParser, self ).parse_args(*args,**kwds)
 
 
-
-
-
         ##
         ## User-Visible Arguments
         ##
 
+        def flag_used(attr):
+            if hasattr( args, attr ):
+                if getattr( args, attr ):
+                    return True
+            return False
 
         ## parse default arguments, and return the arguments
         ## to the caller
-        if args.pdb:
+        if flag_used('pdb'):
             wrap_excepthook_pdb_postmortem()
 
         if not self.loghandlers:
             self._build_loghandler(args)
         else:
             self._setup_user_loghandlers(args)
+
+
+        if '--regen-autocomplete' in cliargs:
+            self.create_autocompleters( writepath=args.regen_autocomplete )
+            sys.exit(0)
 
         return args
 
@@ -488,25 +511,35 @@ class ArgumentParser(argparse.ArgumentParser):
         logstream = True
         logstr    = ''
 
-        if args.verbose:
+        def flag_used(attr):
+            if hasattr( args, attr ):
+                if getattr( args, attr ):
+                    return True
+            return False
+
+
+        if flag_used('verbose'):
             logstr += 'v'
-        if args.very_verbose:
+
+        if flag_used('very_verbose'):
             logstr += 'vv'
 
+        if flag_used('devlog'):
+            logstr += 'd'
 
-        if self.extended_logopts:
-            if args.dev:
-                logstr += 'd'
-            if args.log_longformat:
-                logstr += 'l'
-            if args.log_file:
-                logfile = args.log_file
-            if args.logfile_only:
-                logstream = False
+        if flag_used('log_longformat'):
+            logstr += 'l'
+
+        if flag_used('log_file'):
+            logfile = args.log_file
+
+        if flag_used('logfile_only'):
+            logstream = False
 
         SetLog( logstr, logfile=logfile, logstream=logstream )
 
     def _setup_user_loghandlers(self,args):
+
 
         if args.verbose or args.very_verbose:
 
@@ -520,8 +553,8 @@ class ArgumentParser(argparse.ArgumentParser):
                         loghandler.removeFilter( logfilter )
 
 
-    def create_autocompleters(self ):
-        ZshCompleter( self, self.cli_commandname ).write()
+    def create_autocompleters(self, writepath=None ):
+        ZshCompleter( self, self.cli_commandname ).write( writepath )
 
 
 

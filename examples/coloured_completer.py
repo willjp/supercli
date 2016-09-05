@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 from supercli.argparse import ArgumentParser
 import logging
 logger = logging.getLogger(__name__)
@@ -10,42 +10,40 @@ def cli_interface():
     """
     ansi_escape_codes = make_rainbow_text('*ANSI_ESCAPE_CODES*')
     description=(
-        '------------------------------                                                      \n'
-        'Customized `argparse` module.                                                       \n'
+        '_________________________________________________________________________________   \n'
+        '``supercli.argparse.ArgumentParser`` is a subclass of the builtin `argparse`        \n'
+        'module. I have tried to make the CLI interface more readable, and I have built      \n'
+        'in the arguments that I use most frequently. On top of that, I have built in        \n'
+        'some hidden arguments (useful for testing, but hidden from user so they are not     \n'
+        'overwhelmed with options they will never use).                                      \n'
         '                                                                                    \n'
         '  * newlines are valid/used (but text still wraps if not enough room)               \n'
-        '                                                                                    \n'
         '  * Colourized `ReStructuredText` syntax-highlighting (on Windows too!!)            \n'
-        '                                                                                    \n'
         '  * Feel free to use {ansi_escape_codes} (on Windows too!!)                         \n'
-        '                                                                                    \n'
-        '  * LogHandler Created/Reused and Colour-Coded (lv=INFO by default)                 \n'
-        '                                                                                    \n'
+        '  * LogHandler Reused if same python session (ex: IPython)                          \n'
         '  * all parsers receive a standard set of flags:                                    \n'
         '                                                                                    \n'
         '                                                                                    \n'
-        '       * `--verbose`             (logging.DEBUG)                                  \n'
-        '       * `--very-verbose`        (logging.DEBUG with custom filters disabled)     \n'
+        '       `--verbose`             (logging.DEBUG)                                      \n'
+        '       `--very-verbose`        (logging.DEBUG with custom filters disabled)         \n'
         '                                                                                    \n'
-        '       extended_logopts:                                                            \n'
-        '       * `--ll`                  (detailed multiline log entries)                 \n'
-        '       * `--log-file`            (write to a file in addition to stdout)          \n'
-        '       * `--logfile-only`        (disable logging to stdout)                      \n'
+        '       ``extended_logopts:``                                                        \n'
+        '           `--ll`                  (detailed multiline log entries)                 \n'
+        '           `--log-file`            (write to a file in addition to stdout)          \n'
+        '           `--logfile-only`        (disable logging to stdout)                      \n'
         '                                                                                    \n'
-        '       developer_opts:                                                              \n'
-        '       * `--pdb`                 (pdb/ipdb post-mortem automatically on crash)    \n'
-        '       * `--default-parser`      (display help with default argparse settings)    \n'
-        '       * `--regen-autocomplete`  (regenerates autocomplete scripts. (ex: zsh,etc) \n'
+        '       ``developer_opts: (hidden by default)``                                      \n'
+        '           `--pdb`                 (pdb/ipdb post-mortem automatically on crash)    \n'
+        '           `--default-parser`      (display help with default argparse settings)    \n'
+        '           `--regen-autocomplete`  (regenerates autocomplete scripts. (ex: zsh,etc) \n'
         '                                                                                    \n'
         '                                                                                    \n'
-        'NOTES:                                                                              \n'
-        '       --regen-autocomplete, and --default-parser are intended for developers       \n'
-        '       and they are available even when ``developer_opts==False``.                  \n'
-        '------------------------------                                                      \n'
+        '_________________________________________________________________________________   \n'
+        '_________________________________________________________________________________   \n'
     ).format(**locals())
 
 
-    parser     = ArgumentParser( description=description )
+    parser     = ArgumentParser( description=description, cli_commandname='coloured_completer' )
     subparsers = parser.add_subparsers( dest='subparser_name' )
 
 
@@ -68,6 +66,7 @@ def cli_interface():
     )
 
     args = parser.parse_args()
+    return args
 
 def make_rainbow_text(text):
     """
@@ -99,14 +98,29 @@ def make_rainbow_text(text):
 
 
 if __name__ == '__main__':
-    cli_interface()
+    args = cli_interface()
 
-    logging.info('Running the following command to see more options:')
-    logging.info('  ``python coloured_completer.py --help`` ')
+    logging.info('This is just a sample interface - it is not bound to a command.')
+    logging.info('')
+    logging.info('Try re-running this using following `hidden` flags: ')
+    logging.info('   coloured_completer.py --devlog ')
+    logging.info('   coloured_completer.py --pdb    ')
+    logging.info('   coloured_completer.py --regen-autocomplete "coloured_completer" ')
+    logging.info('   coloured_completer.py --default-parser --help')
+    logging.info('')
+    logging.info('For user-exposed arguments, use the help flag: ')
+    logging.info('   coloured_completer.py --help  ')
+    logging.info('')
     logging.info('info text')
     logging.warning('warning text')
     logging.error('error text')
     logging.debug('debug text')
 
 
+    if hasattr( args, 'pdb' ):
+        if args.pdb:
+            logger.warning("You used the flag `--pdb`. I'm raising an exception so you can see what it does")
+            assert 0 == 1
+
+            print('this will never get run, because the above assertion is not true')
 

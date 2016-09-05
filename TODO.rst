@@ -7,6 +7,7 @@ TODO
   logs in different environments (like maya, mayapy, etc)
 
 * learn how to properly use submodules.
+  just testing.
 
 
 
