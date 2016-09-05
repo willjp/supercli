@@ -1,4 +1,287 @@
 supercli
 ========
 
+``supercli`` is a tiny Toolkit to quickly create readable, user-friendly 
+CLI interfaces *(+autocomplete)*. 
+
+(built on top of builtin argparse/logging modules)
+
+|
+|
+
+This project has been built around tasks that I find myself repeating
+every time that I create a CLI interface. Aside from autocompletion-script 
+generation, this project is less about providing features that are unavailable elsewhere
+than gluing together a sane collection of defaults to quickly get you up and running.
+
+
+**__warning__** : this is still very much in alpha, and some arguments will change.
+
+
+
+|
+|
+
+.. image:: images/coloured_argparse.png
+   :align: center
+   :width: 600px
+
+
+.. image:: images/coloured_logging.png
+   :align: center
+   :width: 600px
+
+
+______________________________________________________________________________
+
+|
+|
+
+.. contents:: Table Of Contents
+
+|
+|
+
+______________________________________________________________________________
+
+
+
+Features
+--------
+
+argparse
+........
+* Automatically generate ZSH autocompletion scripts (supports subarsers)
+* ReStructuredText syntax-highlighting within helplines
+* newlines, and ANSI colours can be used in helplines (on windows too)
+* enables logging (streamhandler) by default (reused if already exists)
+* builtin arguments (``--help(-h), --verbose(-v), --very-verbose(-vv)``)
+* builtin hidden arguments (``--pdb,--devlog,--regen-autocomplete,--default-parser``)
+* extended set of logging-options can be enabled if needed (``--logfile,--log-longformat,--nolog-stdout``)
+* 1x metavar when multiple flags available for one command 
+  (``-f, --file [METAVAR]``  **instead of** ``-f [METAVAR] --file [METAVAR]``)
+* argument flags are coloured `white` to standout from their descriptions.
+
+logging
+.......
+
+* colour-coded logging (on windows too) (borrowed from `unutbu` and `sorin` on stackoverflow)
+* some useful logfilters (borrowed from `unutbu` and `sorin` on stackoverflow)
+* short string-based argument to quickly modify log-verbosity/format
+
+
+
+Usage
+------
+
+QuickStart
+..............
+
+This is all you need to do to create a CLI interface that matches
+the format above:
+
+.. code-block:: python
+
+   from supercli.argparse import ArgumentParser
+
+
+   parser = ArgumentParser(
+               cli_command = 'myprogram',     ## name of command autocompletions are generated for
+               description = 'This descriptions can have `ReStructuredText` in it.',
+               )
+
+
+
+
+argparse
+........
+
+This is just a collection of subclasses of the real `argparse` module,
+and the usage is mostly the same.
+
+
+
+Minimal use:
+````````````
+.. code-block:: python
+
+   from supercli.argparse import ArgumentParser
+
+
+   parser = ArgumentParser(
+               cli_command = 'myprogram',     ## name of command autocompletions are generated for
+               description = 'This descriptions can have `ReStructuredText` in it.',
+               )
+
+
+
+The works:
+``````````
+
+.. code-block:: python
+
+   from supercli.argparse    import ArgumentParser
+   from pygments.lexers      import HtmlLexer
+   from pygments.formatters  import Terminal256Formatter
+
+   parser = ArgumentParser(
+               cli_command = 'myprogram',                 ## name of command autocompletions are generated for
+               description = 'This descriptions can have `ReStructuredText` in it.',
+
+               helpline_lexer     = HtmlLexer,            ## use a different lexer or formatter
+               helpline_formatter = Terminal256Formatter, #  if you'd like
+
+               extended_logopts   = True,                 ## enable flags for log options related to logging to files
+               developer_opts     = True,                 ## make `invisible` dev commands visible in help menu for users
+
+               loghandlers        = None,                 ## if logformat or loghandlers don't suit your needs
+                                                          #  you can manage and pass your own formatted loghandlers.
+                                                          #  (-v|-vv) flags will stil work (logging.DEBUG/deleting all logfilters)
+           )
+
+
+.. code-block:: python
+
+   ##
+   ## everything else is the same
+   ##
+
+   parser.add_argument(
+            '-o','--output', help='Location to write to',
+            metavar='~/mydir'
+            )
+
+   subparsers = parser.add_subparsers( dest='subcmd' )
+   extract    = subparsers.add_parser('extract', help='Extract a file')
+   exctract.add_argument(
+            '-t','--type', help='The type of archive we are extracting from',
+            metavar='tar'
+            )
+
+   ##
+   ## ... etc
+   ##
+
+
+
+
+logging
+.......
+
+If you'd like, you can also use the logging module independently of
+the argparse module. Once again, nothing really new or mindblowing here, 
+this is purely convenience.
+
+
+loglevel/logformat
+``````````````````
+The first argument, ``str_arg`` is a shorthand way of changing the loglevel
+and logformat.
+
+.. code-block:: python
+
+   from   supercli.logging import SetLog
+   import logging
+
+   logger = logging.getLogger(__name__)
+
+   ## loglevel
+   SetLog('')    ## log to stderr (using loglevel==logging.INFO by default)
+                 #  each logrecord is prefixed by the datetime
+   SetLog('i')   ## loglevel==logging.INFO
+   SetLog('w')   ## loglevel==logging.WARNING
+   SetLog('v')   ## loglevel==logging.DEBUG
+   SetLog('vv')  ## loglevel==logging.DEBUG and disable all logfilters
+
+   ## the long way
+   SetLog( lv='INFO' )
+
+
+   ## logformat
+   SetLog('d')   ## (developer) instead of datetime, display __name__ and line-number
+   SetLog('l')   ## each log-entry takes 2x lines (full import-path & func, time, lineno, etc)
+
+
+
+logfile
+```````
+99.9% of the time when I want to log to a file, I want to use a ``RotatingLogHandler``.
+I'm guessing this is the case for most people, so it is the default behaviour.
+
+
+.. code-block:: python
+
+   from   supercli.logging import SetLog
+   import logging
+
+   logger = logging.getLogger(__name__)
+
+   SetLog( 
+      lv           = 'INFO',
+      logfile      = '/path/to/myfile.log',
+      logstream    = False  ,               ## optionally, disable logging to STDERR
+      logfile_size = 1000000,               ## =~8mb
+      debug_mode   = False,                 ## this module is peppered with print() statements
+                                            #  to assist in debugging. This displays them.
+   )
+
+
+logfilters
+``````````
+
+LogFilters let you filter out logrecords based on some information.
+There are two logfilters in ``supercli.logging``, but any ``logging.Filter``
+subclass will work.
+
+By default ``SetLog()`` is set up to use ``supercli.BlackList`` as it's filter.
+Each record is matched against the calling function's **import-path + function-name**.
+
+ex:
+
+.. code-block:: python
+
+   fnmatch.fnmatch( filter_value, '*{import_path}.{function_name}*' )
+
+
+.. code-block:: python
+
+   from   supercli.logging import SetLog, Blacklist
+   import logging
+
+   logger = logging.getLogger(__name__)
+
+   SetLog(
+      lv             = 'INFO'               ,
+      logfile        = '/path/to/myfile.log',
+      logstream      = True                 ,
+      filter_matches = ['sqliface.','chatty.module.func'],   ## filters records matching  '*sqliface.*', '*chatty.module.func*' 
+      filter_type    = Blacklist,                            ## BlackList is the default
+   )
+
+
+
+
+
+
+Todo
+----
+
+* tests
+* bash autocompletion scripts
+* (zsh) completion types (_file,_netwkiface,...)
+* needs more flexible handling of ackward environments like maya.
+  (I'm assuming all autodesk products have their own loghandlers for
+  script-editors and the like)
+* make logging.WhiteList work like Blacklist works.
+* WhiteList and BlackList need to be able to be used together
+
+
+
+Thanks
+-------
+
+* `colorama` authors for filling cmd.exe with colourful text, instead of the room with colourful language.
+* stackoverflow users `unutbu` and `sorin` for windows-colour/logfilter solutions.
+
+
 

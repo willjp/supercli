@@ -384,12 +384,12 @@ class ArgumentParser(argparse.ArgumentParser):
         """
 
         self.add_argument(
-            '-v', '--verbose', help='Prints more detailed information as the program is running (`logging.DEBUG`)',
+            '-v', '--verbose', help='Prints more detailed log-information (`logging.DEBUG`)',
             action='store_true',
             )
 
         self.add_argument(
-            '-vv', '--very-verbose', help='Same as verbose, except that any applied log-filters are disabled. All information is printed',
+            '-vv', '--very-verbose', help='Same as verbose, but all log-filters are disabled.\n (All information is printed)',
             action='store_true',
             )
 
