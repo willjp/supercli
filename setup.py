@@ -77,8 +77,8 @@ setup(
         'Development Status :: 3 - Alpha',
         'License :: OSI Approved :: BSD License',
         'Programming Language :: Python',
-        'Programming Language :: Python2.7',
-        'Programming Language :: Python3',
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
 
         'Operating System :: Microsoft :: Windows',
         'Operating System :: POSIX :: Linux',
