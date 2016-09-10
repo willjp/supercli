@@ -7,9 +7,9 @@ import re
 import shutil
 
 def get_pkginfo():
-    cwd     = os.path.realpath(__file__)
+    cwd     = os.path.realpath(__file__).replace('\\','/')
     pkgpath = os.path.dirname( cwd ).replace('\\','/')
-    pkgname = cwd.split('/')[-2]
+    pkgname = '-'.join( cwd.split('/')[-2].split('-')[:-1] )
     return (pkgpath,pkgname)
 
 def get_version():
