@@ -9,7 +9,9 @@ import shutil
 def get_pkginfo():
     cwd     = os.path.realpath(__file__).replace('\\','/')
     pkgpath = os.path.dirname( cwd ).replace('\\','/')
-    pkgname = '-'.join( cwd.split('/')[-2].split('-')[:-1] )
+    pkgname = cwd.split('/')[-2]
+    if '-' in pkgname:
+        pkgname = '-'.join( pkgname.split('-')[:-1] )
     return (pkgpath,pkgname)
 
 def get_version():
@@ -32,17 +34,6 @@ def get_version():
                 version = version.replace("'",'')
                 return version
     raise RuntimeError('unable to find a value for __version__ in : %s' % pkginit )
-
-def cleanup():
-    (pkgpath,pkgname) = get_pkginfo()
-    cleanup_dirs = [
-        'build',
-        'dist',
-        '{pkgname}.egg-info'.format(**locals())
-    ]
-    for cleanupdir in cleanup_dirs:
-        if os.path.isdir( cleanupdir ):
-            shutil.rmtree( cleanupdir )
 
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
@@ -86,4 +77,3 @@ setup(
     ],
 )
 
-#cleanup()
