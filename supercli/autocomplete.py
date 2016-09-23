@@ -297,6 +297,20 @@ class ZshCompleter(object):
         return path
 
 
+##
+## funcs
+##
+
+def get_zsh_completionpath():
+    paths = (
+        '/usr/local/share/zsh/functions/Completion/Unix',
+        '/usr/share/zsh/functions/Completion/Unix',
+        )
+    for path in paths:
+        if os.path.isdir( path ):
+            return path
+    raise RuntimeError('No fpath could be found for installation in: %s' % repr(paths) )
+
 
 if __name__ == '__main__':
     pass

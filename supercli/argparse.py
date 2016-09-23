@@ -41,8 +41,6 @@ PARSER       = 'A...'
 REMAINDER    = '...'
 loc          = locals
 
-#!TODO: --regen-autocomplete not working
-
 #!TODO: argument validation. everywhere.
 
 #!TODO: replace 'logfile_only' with 'log_stdout'
