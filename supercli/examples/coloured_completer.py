@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from supercli.argparse import ArgumentParser
+import supercli.argparse
 import logging
 logger = logging.getLogger(__name__)
 
@@ -43,7 +43,7 @@ def cli_interface():
     ).format(**locals())
 
 
-    parser     = ArgumentParser( description=description, cli_commandname='coloured_completer' )
+    parser     = supercli.argparse.ArgumentParser( description=description, cli_commandname='coloured_completer' )
     subparsers = parser.add_subparsers( dest='subparser_name' )
 
 

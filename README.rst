@@ -83,10 +83,9 @@ the format above:
 
 .. code-block:: python
 
-   from supercli.argparse import ArgumentParser
+   import supercli.argparse
 
-
-   parser = ArgumentParser(
+   parser = supercli.argparse.ArgumentParser(
                cli_command = 'myprogram',     ## name of command autocompletions are generated for
                description = 'This descriptions can have `ReStructuredText` in it.',
                )
@@ -107,11 +106,11 @@ and the usage is mostly the same.
 
 .. code-block:: python
 
-   from supercli.argparse    import ArgumentParser
+   import supercli.argparse
    from pygments.lexers      import HtmlLexer
    from pygments.formatters  import Terminal256Formatter
 
-   parser = ArgumentParser(
+   parser = supercli.argparse.ArgumentParser(
                cli_command = 'myprogram',                 ## name of command autocompletions are generated for
                description = 'This descriptions can have `ReStructuredText` in it.',
 
@@ -147,26 +146,26 @@ and logformat.
 
 .. code-block:: python
 
-   from   supercli.logging import SetLog
+   import supercli.logging
    import logging
 
    logger = logging.getLogger(__name__)
 
    ## loglevel
-   SetLog('')    ## log to stderr (using loglevel==logging.INFO by default)
-                 #  each logrecord is prefixed by the datetime
-   SetLog('i')   ## loglevel==logging.INFO
-   SetLog('w')   ## loglevel==logging.WARNING
-   SetLog('v')   ## loglevel==logging.DEBUG
-   SetLog('vv')  ## loglevel==logging.DEBUG and disable all logfilters
+   supercli.logging.SetLog('')    ## log to stderr (using loglevel==logging.INFO by default)
+                                  #  each logrecord is prefixed by the datetime
+   supercli.logging.SetLog('i')   ## loglevel==logging.INFO
+   supercli.logging.SetLog('w')   ## loglevel==logging.WARNING
+   supercli.logging.SetLog('v')   ## loglevel==logging.DEBUG
+   supercli.logging.SetLog('vv')  ## loglevel==logging.DEBUG and disable all logfilters
 
    ## the long way
-   SetLog( lv='INFO' )
+   supercli.logging.SetLog( lv='INFO' )
 
 
    ## logformat
-   SetLog('d')   ## (developer) instead of datetime, display __name__ and line-number
-   SetLog('l')   ## each log-entry takes 2x lines (full import-path & func, time, lineno, etc)
+   supercli.logging.SetLog('d')   ## (developer) instead of datetime, display __name__ and line-number
+   supercli.logging.SetLog('l')   ## each log-entry takes 2x lines (full import-path & func, time, lineno, etc)
 
 
 
@@ -178,12 +177,12 @@ I'm guessing this is the case for most people, so it is the default behaviour.
 
 .. code-block:: python
 
-   from   supercli.logging import SetLog
+   import supercli.logging
    import logging
 
    logger = logging.getLogger(__name__)
 
-   SetLog( 
+   supercli.logging.SetLog( 
       lv           = 'INFO',
       logfile      = '/path/to/myfile.log',
       logstream    = False  ,               ## optionally, disable logging to STDERR
