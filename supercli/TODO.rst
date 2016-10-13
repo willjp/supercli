@@ -2,7 +2,8 @@
 TODO
 ====
 
-* needs setup.py
+* create a cli-flag --fullhelp that displays --help
+  without removing the hidden arguments
 
 * logging.SetLog() needs a modular way of setting
   logs in different environments (like maya, mayapy, etc)
