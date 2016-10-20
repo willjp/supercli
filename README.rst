@@ -12,10 +12,10 @@ CLI interfaces *(+autocomplete)*.
 This project has been built around tasks that I find myself repeating
 every time that I create a CLI interface. Aside from autocompletion-script 
 generation, this project is less about providing features that are unavailable elsewhere
-than gluing together a sane collection of defaults to quickly get you up and running.
+than gluing together several existing options to quickly get you up and running.
 
 
-**__warning__** : this is still very much in alpha, and some arguments will change.
+**__warning__** : this is still very much in alpha, and some arguments **will** change.
 
 
 
@@ -55,9 +55,9 @@ argparse tweaks
 * ReStructuredText syntax-highlighting within helplines
 * newlines, and ANSI colours can be used in helplines (on windows too)
 * enables logging (streamhandler) by default (reused if already exists)
-* builtin arguments (``--help(-h), --verbose(-v), --very-verbose(-vv)``)
-* builtin hidden arguments (``--pdb,--devlog,--regen-autocomplete,--default-parser``)
-* extended set of logging-options can be enabled if needed (``--logfile,--log-longformat,--nolog-stdout``)
+* builtin arguments (``--help(-h), --verbose(-v), --very-verbose(-vv), --fullhelp``)
+* builtin hidden arguments (``--pdb,--devlog,--gen-autocomp,--default-parser``)
+* extended set of logging-options can be enabled if needed (``--logfile,--log-longfmt,--silent``)
 * 1x metavar when multiple flags available for one command 
   (``-f, --file [METAVAR]``  **instead of** ``-f [METAVAR] --file [METAVAR]``)
 * argument flags are coloured `white` to standout from their descriptions.
@@ -93,7 +93,7 @@ the format above:
 
 .. code-block:: bash
 
-   myprogram --regen-autocomplete .           ## create autocompleter in current dir
+   myprogram --gen-autocomp   ## create ZSH autocompletion script in current dir
 
 
 
@@ -111,8 +111,8 @@ and the usage is mostly the same.
    from pygments.formatters  import Terminal256Formatter
 
    parser = supercli.argparse.ArgumentParser(
-               cli_command = 'myprogram',                 ## name of command autocompletions are generated for
-               description = 'This descriptions can have `ReStructuredText` in it.',
+               autocomp_cmd = 'myprogram',                ## name of command autocompletions are generated for
+               description  = 'This descriptions can have `ReStructuredText` in it.',
 
                helpline_lexer     = HtmlLexer,            ## use a different lexer or formatter
                helpline_formatter = Terminal256Formatter, #  if you'd like
@@ -167,6 +167,8 @@ and logformat.
    supercli.logging.SetLog('d')   ## (developer) instead of datetime, display __name__ and line-number
    supercli.logging.SetLog('l')   ## each log-entry takes 2x lines (full import-path & func, time, lineno, etc)
 
+   ## these can be combined
+   supercli.logging.SetLog('dv') ## (developer) and (verbose) flags are both active
 
 
 logfile
@@ -199,7 +201,7 @@ LogFilters let you filter out logrecords based on some information.
 There are two logfilters in ``supercli.logging``, but any ``logging.Filter``
 subclass will work.
 
-By default ``SetLog()`` is set up to use ``supercli.BlackList`` as it's filter.
+By default ``SetLog()`` is set up to use ``supercli.logging.BlackList`` as it's filter.
 Each record is matched against the calling function's **import-path + function-name**.
 
 ex:
@@ -243,7 +245,7 @@ Todo
   script-editors and the like)
 * make logging.WhiteList work like Blacklist works.
 * WhiteList and BlackList need to be able to be used together
-
+* Show a more generic use of command in picture.. 
 
 
 Thanks

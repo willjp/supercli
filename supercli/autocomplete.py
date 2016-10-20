@@ -12,8 +12,13 @@ ________________________________________________________________________________
 ## builtin
 from   __future__    import unicode_literals
 from   __future__    import absolute_import
+from   subprocess    import PIPE
+import subprocess
 import logging
 import datetime
+import os
+import sys
+import six
 ## custom
 import supercli.argparse
 
@@ -244,15 +249,25 @@ class ZshCompleter(object):
         """
         cli_command = self.cli_command
 
+        ## find location of zsh autocompletion script
         if outfile:
             outfile = os.path.realpath(outfile)
 
-        ## output location
-        if not outfile:
-            outfile = '_{cli_command}'.format(**loc())
         else:
-            if not os.path.isdir( os.path.dirname(outfile) ):
-                os.makedirs( os.path.dirname(outfile) )
+            try:
+                zsh_completer_dir = get_zsh_completer_dir()
+            except( RuntimeError ):
+                logger.warning(
+                    'unable to find a valid location on your $fpath to install zsh autocompletion script to.\n'
+                    'writing completer script to current directory'
+                )
+                zsh_completer_dir = ''
+            outfile = '{zsh_completer_dir}_{cli_command}'.format(**loc())
+
+
+
+        if not os.path.isdir( os.path.dirname(outfile) ):
+            os.makedirs( os.path.dirname(outfile) )
 
         ## obtain and write autocomp
         comptxt     = self.get()
@@ -263,55 +278,69 @@ class ZshCompleter(object):
 
         return comptxt
 
-    def get_os_zshcompleter_dir(self):
-        """
-        You cannot access $fpath from python's os.environ, and the actual
-        fpath directories vary depending on the operating system. So this is an extremely
-        ackward workaround to find an $fpath location that actually exists.
-
-        __WARNING__: This is extremely sensitive to the environment it is run in.
-                     That makes using this script unpredictable. Use at your own discretion.
-        """
-        raw_fpath = subprocess.check_output(['zsh','-c','echo $fpath'], universal_newlines=True)
-        fpath     = shlex.split( raw_fpath.strip() )
-
-        first_existing_fpath = None
-        unix_fpath           = None
 
 
-        for path in fpath:
+# =====
+# Funcs
+# =====
+
+def get_zsh_completer_dir():
+    """
+    Using zsh, attempts to automatically locate the completion directory.
+    (can be copied into setup.py to install your zsh autocompletion)
+
+    __NOTE__:   http://zsh.sourceforge.net/Doc/Release/Completion-System.html#Completion-Directories
+                The only generic completion directory that can be expected on all systems is 'Completion/Unix'
+    """
+
+    # ==================
+    # find $fpath value
+    # ==================
+    success = True
+    try:
+        pipe = subprocess.Popen(['zsh','-c','echo $fpath'], stdout=PIPE, stderr=PIPE, universal_newlines=True )
+    except:
+        success = False
+
+    (out,err) = pipe.communicate()
+    if pipe.returncode != 0:
+        success = False
+        logger.error( out )
+        if err:
+            logger.error( err )
+            raise RuntimeError('Error querying fpath from zsh')
+
+    fpath = out.split(' ')
+
+    # =======================================
+    # look for Completion directory on $fpath
+    # =======================================
+    competion_path = None
+    for path in fpath:
+        if 'functions/Completion/Unix' in path:
             if os.path.isdir( path ):
-                if not first_existing_fpath:
-                    first_existing_fpath = path
-                if os.path.split( path )[-1] in ('Unix','unix'):
-                    unix_fpath = path
+                completion_path = path
+                break
+
+    if not completion_path:
+        for path in fpath:
+            if 'functions/Completion' in path:
+                if os.path.isdir( path ):
+                    completion_path = path
                     break
 
-        if unix_fpath:
-            path = unix_fpath
-        elif first_existing_fpath:
-            path = first_existing_fpath
-        else:
-            raise IOError('Unable to find a location on the $fpath to save autocompletion script to')
+    if not completion_path:
+        raise RuntimeError('Unable to find directory matching "*/functions/Completion" on $fpath')
 
-        return path
+    return completion_path
 
-
-##
-## funcs
-##
-
-def get_zsh_completionpath():
-    paths = (
-        '/usr/local/share/zsh/functions/Completion/Unix',
-        '/usr/share/zsh/functions/Completion/Unix',
-        )
-    for path in paths:
-        if os.path.isdir( path ):
-            return path
-    raise RuntimeError('No fpath could be found for installation in: %s' % repr(paths) )
 
 
 if __name__ == '__main__':
+    get_zsh_completer_dir()
     pass
+
+
+
+
 

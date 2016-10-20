@@ -28,14 +28,14 @@ def cli_interface():
         '       `--very-verbose`        (logging.DEBUG with custom filters disabled)         \n'
         '                                                                                    \n'
         '       ``extended_logopts:``                                                        \n'
-        '           `--ll`                  (detailed multiline log entries)                 \n'
-        '           `--log-file`            (write to a file in addition to stdout)          \n'
-        '           `--logfile-only`        (disable logging to stdout)                      \n'
+        '           `--log-longfmt`         (detailed multiline log entries)                 \n'
+        '           `--logfile`             (write to a file in addition to stdout)          \n'
+        '           `--silent`              (disable logging to stdout)                      \n'
         '                                                                                    \n'
         '       ``developer_opts: (hidden by default)``                                      \n'
         '           `--pdb`                 (pdb/ipdb post-mortem automatically on crash)    \n'
         '           `--default-parser`      (display help with default argparse settings)    \n'
-        '           `--regen-autocomplete`  (regenerates autocomplete scripts. (ex: zsh,etc) \n'
+        '           `--gen-autocomp`        (generates autocompletion scripts. (ex: zsh,etc) \n'
         '                                                                                    \n'
         '                                                                                    \n'
         '_________________________________________________________________________________   \n'
@@ -43,7 +43,7 @@ def cli_interface():
     ).format(**locals())
 
 
-    parser     = supercli.argparse.ArgumentParser( description=description, cli_commandname='coloured_completer' )
+    parser     = supercli.argparse.ArgumentParser( description=description, autocomp_cmd='coloured_completer' )
     subparsers = parser.add_subparsers( dest='subparser_name' )
 
 
@@ -105,11 +105,14 @@ if __name__ == '__main__':
     logging.info('Try re-running this using following `hidden` flags: ')
     logging.info('   coloured_completer.py --devlog ')
     logging.info('   coloured_completer.py --pdb    ')
-    logging.info('   coloured_completer.py --regen-autocomplete "coloured_completer" ')
+    logging.info('   coloured_completer.py --gen-autocomp')
     logging.info('   coloured_completer.py --default-parser --help')
     logging.info('')
     logging.info('For user-exposed arguments, use the help flag: ')
     logging.info('   coloured_completer.py --help  ')
+    logging.info('')
+    logging.info('For help on hidden dev arguments use --fullhelp')
+    logging.info('   coloured_completer.py --fullhelp')
     logging.info('')
     logging.info('info text')
     logging.warning('warning text')
