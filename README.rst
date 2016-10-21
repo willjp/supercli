@@ -86,8 +86,8 @@ the format above:
    import supercli.argparse
 
    parser = supercli.argparse.ArgumentParser(
-               cli_command = 'myprogram',     ## name of command autocompletions are generated for
-               description = 'This descriptions can have `ReStructuredText` in it.',
+               autocomp_cmd = 'myprogram',     ## name of command autocompletions are generated for
+               description  = 'This descriptions can have `ReStructuredText` in it.',
                )
 
 
