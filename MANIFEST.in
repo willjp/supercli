@@ -1,0 +1,3 @@
+recursive-include supercli/examples *
+recursive-include supercli/tests    *
+
