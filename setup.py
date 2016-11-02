@@ -31,11 +31,12 @@ class Configure( object ):
         version_history:
             0.1.0:     first-release
         """
-        self._pkgname      = pkgname
-        self._pkgpath      = None     ## path to directory containing setup.py
-        self._package_data = {}       ## setup.py's package_data variable
-        self._pkgversion   = None     ## package's version (according to __init__.py's '__version__')
-        self.__version__   = '0.1.0'  ## this class's version-num
+        self._pkgname              = pkgname
+        self._pkgpath              = None     ## path to directory containing setup.py
+        self._package_data         = {}       ## setup.py's package_data variable
+        self._exclude_package_data = {}       ## setup.py's exclude_package_data variable
+        self._pkgversion           = None     ## package's version (according to __init__.py's '__version__')
+        self.__version__           = '0.1.0'  ## this class's version-num
         self.main()
 
     def main(self):
@@ -43,8 +44,12 @@ class Configure( object ):
         self._get_pkg_version()
 
     def _get_pkgpath(self):
-        """ returns path to directory containing setup.py
-        (unable to use path to determine package-name, tox uses non-standard path-names) """
+        """
+        returns path to directory containing setup.py
+
+        ( unable to use path to determine package-name, )
+        ( tox renames package when extracting it.       )
+        """
         cwd     = os.path.realpath(__file__).replace('\\','/')
         pkgpath = os.path.dirname( cwd ).replace('\\','/')
         pkgname = cwd.split('/')[-2]
@@ -82,7 +87,10 @@ class Configure( object ):
     def set_packagedata(self, package_data):
         self._package_data = package_data
 
-    def add_packagedata(self, path=None, matches=None, recursive=False ):
+    def set_exclude_packagedata(self, exclude_package_data ):
+        self._exclude_package_data = exclude_package_data
+
+    def add_packagedata(self, packagedata_var='package_data', path=None, matches=None, recursive=False,  ):
         """
         Add a directory to a dictionary formatted for setuptools.setup()'s package_data
         argument.
@@ -92,20 +100,35 @@ class Configure( object ):
         __________________________________________________________________________________________
         INPUT:
         __________________________________________________________________________________________
-        matches      | ['*.rst', '*.txt', ...] |       | a list of fnmatch.fnmatch matches
-                     |                         |       | to filenames you want inserted in
-                     |                         |       |
-        pkgpath      | 'tests'                 | (opt) | the directory relative to your srctree
-                     |                         |       | that you want to add matches under.
-                     |                         |       | If not provided, default is directly from
-                     |                         |       | src-tree
-                     |                         |       |
-        recursive    | True, False             | (opt) | If you want to add files recursively
-                     |                         |       |
+        packagedata_var | 'package_data',         |       | which variable is it that you want
+                        | 'exclude_package_data'  |       | to add files to?
+                        |                         |       | (handles both package_data and exclude_package_data)
+                        |                         |       |
+        path            | 'tests'                 | (opt) | the directory relative to your srctree
+                        |                         |       | that you want to add matches under.
+                        |                         |       | If not provided, default is directly from
+                        |                         |       | src-tree
+                        |                         |       |
+        matches         | ['*.rst', '*.txt', ...] |       | a list of fnmatch.fnmatch matches
+                        |                         |       | to filenames you want inserted in
+                        |                         |       |
+        recursive       | True, False             | (opt) | If you want to add files recursively
+                        |                         |       |
         """
-        package_data = self._package_data
-        pkgname      = self._pkgname
-        pkgpath      = self._pkgpath
+        pkgname    = self._pkgname
+        pkgpath    = self._pkgpath
+        pkg_srcdir = '{pkgpath}/{pkgname}'.format(**loc())
+
+
+        ## determine variable we are modifying
+        if packagedata_var == 'package_data':
+            package_data = self._package_data
+        elif packagedata_var == 'exclude_package_data':
+            package_data = self._exclude_package_data
+        else:
+            raise RuntimeError('packagedata_var argument expects "package_data" or "exclude_package_data"')
+
+
 
         ## Get pkgpath
         if not path:
@@ -123,48 +146,62 @@ class Configure( object ):
 
 
 
+
+
+
         ## Add to package_data
         if not recursive:
-            relpath = self._get_relpath( path )
 
-            if relpath not in package_data:
-                package_data[ relpath ] = []
+            nearest_python_package = pkg_srcdir
+            dirs_after_pkgsrcdir   = path.replace( pkg_srcdir, '' ).split('/')
+
+            ## find the nearest directory between your pkg_srcdir and
+            ## the provided directory that contains __init__.py
+            test_path = pkg_srcdir
+            for path_seg in dirs_after_pkgsrcdir:
+                test_path += '/{path_seg}'.format(**loc())
+                if '__init__.py' in os.listdir( test_path ):
+                    nearest_python_package = test_path
+            relpath_nearest_python_package = nearest_python_package.replace( pkg_srcdir, '' )
+
+
+            ## Add the match to package_data under that directory
+            if relpath_nearest_python_package not in package_data:
+                package_data[ relpath_nearest_python_package ] = []
+
             for match in matches:
-                if match not in package_data[ relpath ]:
-                    package_data[ relpath ].append( match )
+                if match not in package_data[ relpath_nearest_python_package ]:
+                    package_data[ relpath_nearest_python_package ].append( match )
+
+
+
 
 
         elif recursive:
-            nearest_python_package = path
+            nearest_python_package         = pkg_srcdir
+            relpath_nearest_python_package = ''
+
 
             for (root, dirs, files) in os.walk( path, topdown=False):
                 if '__init__.py' in os.listdir( root ):
-                    nearest_python_package = root
+                    nearest_python_package         = root
+                    relpath_nearest_python_package = nearest_python_package.replace( pkg_srcdir, '' )
 
-
-                relpath   = self._get_relpath( root )
-                relpath   = relpath.replace('/','.')
                 match_str = '[/]*{nearest_python_package}[/]*'.format(**loc())
                 match_dir = re.sub( match_str, '', root )
-                #print( path )
-                #print( match_dir )
-                #import ipdb;ipdb.set_trace()
-
-                #!NOTE: need to make nearest_python_package abbreviated
-
 
                 for match in matches:
                     for _file in files:
                         if fnmatch.fnmatch( '{root}/{_file}'.format(**loc()), match ):
 
-                            if nearest_python_package not in package_data:
-                                package_data[ nearest_python_package ] = []
+                            if relpath_nearest_python_package not in package_data:
+                                package_data[ relpath_nearest_python_package ] = []
 
                             if match_dir:
                                 match = '{match_dir}/{match}'.format(**loc())
 
-                            if match not in package_data[ nearest_python_package ]:
-                                package_data[ nearest_python_package ].append( match )
+                            if match not in package_data[ relpath_nearest_python_package ]:
+                                package_data[ relpath_nearest_python_package ].append( match )
 
                             break
 
@@ -239,42 +276,42 @@ class Configure( object ):
 # =========
 logging.basicConfig()
 cfg = Configure( pkgname='supercli' )
-#cfg.add_packagedata( '',      ['*.txt','*.rst'], recursive=True )
-#cfg.add_packagedata( 'tests', ['*.py'],          recursive=True )
-cfg.add_packagedata( 'examples', ['*'],          recursive=True )
+cfg.add_packagedata( 'package_data',   '',         ['*.txt','*.rst'], recursive=True )
+cfg.add_packagedata( 'package_data',   'tests',    ['*.py'],          recursive=True )
+cfg.add_packagedata( 'package_data',   'examples', ['*'],          recursive=True )
 
 cfg.summary()
 
-setup(
-    name         = cfg._pkgname,
-    version      = cfg._pkgversion,
-    author       = 'Will Pittman',
-    author_email = 'willjpittman@gmail.com',
-    url          = 'https://github.com/willjp/supercli',
-    license      = 'BSD',
-
-    description      = 'Toolkit to quickly create readable, user-friendly CLI interfaces with automatic shell-autocompletion',
-    long_description = cfg.read('README.rst'),
-
-    keywords         = 'supercli cli color colour argparse logging interface',
-    install_requires = ['colorama','pygments','six'],
-    packages         = setuptools.find_packages(),
-    zip_safe         = False,
-    #include_package_data = True,
-
-    package_data     = cfg._package_data,
-    cmdclass         = { 'clean': CleanCommand  },
-
-    classifiers      = [
-        'Development Status :: 3 - Alpha',
-        'License :: OSI Approved :: BSD License',
-        'Programming Language :: Python',
-        'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3',
-
-        'Operating System :: Microsoft :: Windows',
-        'Operating System :: POSIX :: Linux',
-        'Operating System :: POSIX :: BSD',
-    ],
-)
+#setup(
+#    name         = cfg._pkgname,
+#    version      = cfg._pkgversion,
+#    author       = 'Will Pittman',
+#    author_email = 'willjpittman@gmail.com',
+#    url          = 'https://github.com/willjp/supercli',
+#    license      = 'BSD',
+#
+#    description      = 'Toolkit to quickly create readable, user-friendly CLI interfaces with automatic shell-autocompletion',
+#    long_description = cfg.read('README.rst'),
+#
+#    keywords         = 'supercli cli color colour argparse logging interface',
+#    install_requires = ['colorama','pygments','six'],
+#    packages         = setuptools.find_packages(),
+#    zip_safe         = False,
+#    #include_package_data = True,
+#
+#    package_data     = cfg._package_data,
+#    cmdclass         = { 'clean': CleanCommand  },
+#
+#    classifiers      = [
+#        'Development Status :: 3 - Alpha',
+#        'License :: OSI Approved :: BSD License',
+#        'Programming Language :: Python',
+#        'Programming Language :: Python :: 2.7',
+#        'Programming Language :: Python :: 3',
+#
+#        'Operating System :: Microsoft :: Windows',
+#        'Operating System :: POSIX :: Linux',
+#        'Operating System :: POSIX :: BSD',
+#    ],
+#)
 
