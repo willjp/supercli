@@ -1,6 +1,9 @@
 
 import unittest
-import mock
+try:
+    import mock
+except:
+    from unittest import mock
 
 import supercli.logging
 
