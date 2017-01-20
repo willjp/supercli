@@ -39,3 +39,9 @@ Version History
    * `argparse.ArgumentParser()__init__()` s argument: `cli_commandname` has been
      renamed to `autocomp_cmd`
 
+
+0.0.a4:
+-------
+   * loglevel can be set with an integer
+
+

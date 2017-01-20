@@ -12,12 +12,14 @@ ________________________________________________________________________________
 ## builtins
 from   __future__    import unicode_literals
 from   __future__    import absolute_import
+from   numbers       import Number
 import logging
 import sys
 import re
 import os
 ## external
 import colorama
+import six
 
 
 loc = locals
@@ -120,7 +122,7 @@ class SetLog( object ):
                        |                             |       |
                        |                             |       |
         lv             | 'INFO','DEBUG', 'WARN', ... | (opt) | the loglevel you'd like to set.
-                       |                             |       | 'info' by default. case-insensitive.
+                       | 5, 10, 20, ...              |       | 'info' by default. case-insensitive.
                        |                             |       | (overridden by str_arg)
                        |                             |       |
         reuse          | True, False                 | (opt) | Try to reuse existing loghandlers if
@@ -223,10 +225,13 @@ class SetLog( object ):
             ## log verbosity
             ##
 
-            if   'v' in self.str_arg:     self.lv = 'DEBUG'
-            elif 'w' in self.str_arg:     self.lv = 'WARN'
-            elif 'i' in self.str_arg:     self.lv = 'INFO'
-            elif 'c' in self.str_arg:     self.lv = 'CRITICAL'
+            if isinstance( self.lv, six.text_type ):
+                if   'v' in self.str_arg:     self.lv = 'DEBUG'
+                elif 'w' in self.str_arg:     self.lv = 'WARN'
+                elif 'i' in self.str_arg:     self.lv = 'INFO'
+                elif 'c' in self.str_arg:     self.lv = 'CRITICAL'
+            elif not isinstance( self.lv, Number ):
+                raise TypeError('expected either a string, or a number for loglevel. received: %s' % self.lv )
 
 
             ## In your program, you might want to tone down the logging on
@@ -377,7 +382,10 @@ class SetLog( object ):
         return handlers
 
     def _set_loglevel(self):
-        logging.root.level = getattr( logging, self.lv.upper() )
+        if isinstance( self.lv, six.text_type ):
+            logging.root.level = getattr( logging, self.lv.upper() )
+        else:
+            logging.root.level = self.lv
 
     def _set_logformat( self, handlers ):
 
