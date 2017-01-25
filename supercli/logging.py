@@ -84,6 +84,8 @@ class SetLog( object ):
                     logstream      = True,
                     logfile_size   = 1000000, # 8Mb
                     debug_mode     = False,
+                    logfmt         = None,
+                    very_verbose   = False,
                 ):
         """
         More powerful replacement for logging.baseConfig().
@@ -153,6 +155,11 @@ class SetLog( object ):
         debug_mode     | True, False                 | (opt) | Enable to Debug this class using print statements.
                        |                             |       | Not intended for production.
                        |                             |       |
+        logfmt         | None, 'long', 'dev',        | (opt) | Some optional logformat presets that you can use,
+                       | '%(message)s'               |       | or you can set your own lineformat here.
+                       |                             |       |
+        very_verbose   | True, False                 | (opt) | Disables log-filters
+                       |                             |       |
         """
 
         ## Arguments
@@ -166,6 +173,9 @@ class SetLog( object ):
         self.logfile_size    = logfile_size
         self.logstream       = logstream
         self.debug_mode      = debug_mode
+
+        self.logfmt          = logfmt
+        self.very_verbose    = very_verbose
 
         ## Attributes
         self.is_maya = False        ## set to true if running python within maya (NOT mayapy)
@@ -181,7 +191,7 @@ class SetLog( object ):
     def main(self):
         self.validate_args()
         self.is_running_mayagui()
-        self.parse_strarg()
+        self.parse_logfmt_args()
         self.create_loghandlers()
         self.colorize_log()
 
@@ -204,7 +214,7 @@ class SetLog( object ):
         if self.logfile:
             self.logfile = os.path.realpath( self.logfile ).replace( '\\','/' )
 
-    def parse_strarg(self):
+    def parse_logfmt_args(self):
         """
         Parses str_arg, a convenient short-form way of setting loglevel,
         and modifying the log output.
@@ -220,36 +230,43 @@ class SetLog( object ):
 
         self.linefmt = self.linefmt_norm
 
-        if self.str_arg != None:
-
-            ## log verbosity
-            ##
-
-            if isinstance( self.lv, six.text_type ):
-                if   'v' in self.str_arg:     self.lv = 'DEBUG'
-                elif 'w' in self.str_arg:     self.lv = 'WARN'
-                elif 'i' in self.str_arg:     self.lv = 'INFO'
-                elif 'c' in self.str_arg:     self.lv = 'CRITICAL'
-            elif not isinstance( self.lv, Number ):
-                raise TypeError('expected either a string, or a number for loglevel. received: %s' % self.lv )
+        if self.str_arg == None:
+            self.str_arg = ''
 
 
-            ## In your program, you might want to tone down the logging on
-            #  some of the more chatty library modules. The 'vv' flag
-            #  gives the user the power to disable these filters.
-            if self.filter_matches:
-                if 'vv' in self.str_arg:
-                    self.filter_matches = []
+        ## log verbosity
+        ##
+        if isinstance( self.lv, six.text_type ):
+            if   'v' in self.str_arg:     self.lv = 'DEBUG'
+            elif 'w' in self.str_arg:     self.lv = 'WARN'
+            elif 'i' in self.str_arg:     self.lv = 'INFO'
+            elif 'c' in self.str_arg:     self.lv = 'CRITICAL'
+        elif not isinstance( self.lv, Number ):
+            raise TypeError('expected either a string, or a number for loglevel. received: %s' % self.lv )
 
 
-            ## logrecord formatting
-            ##
-            if   'l' in self.str_arg:
-                self.linefmt = self.linefmt_long
-                self.datefmt = None
+        ## In your program, you might want to tone down the logging on
+        #  some of the more chatty library modules. The 'vv' flag
+        #  gives the user the power to disable these filters.
+        if self.filter_matches:
+            if 'vv' in self.str_arg or self.very_verbose:
+                self.filter_matches = []
 
-            elif 'd' in self.str_arg:
-                self.linefmt = self.linefmt_dev
+
+        ## logrecord formatting
+        ##
+        if   'l' in self.str_arg   or  self.logfmt  == 'long':
+            self.linefmt = self.linefmt_long
+            self.datefmt = None
+
+        elif 'd' in self.str_arg   or   self.logfmt == 'dev':
+            self.linefmt = self.linefmt_dev
+
+
+        ## allow user to set their own lineformat
+        ##
+        if self.logfmt not in (None, 'dev', 'long'):
+            self.linefmt = self.logfmt
 
 
         self.logdebug( 'loglevel:    %s' % self.lv )

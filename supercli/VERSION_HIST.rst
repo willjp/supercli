@@ -44,4 +44,13 @@ Version History
 -------
    * loglevel can be set with an integer
 
+0.0.a5:
+-------
+   * new arguments `logfmt` and `very_verbose` so that you can use
+     an integer, but still use the log lineformat presets 'dev'/'long',
+     disable the user of filters, and set your own log linefmt while using
+     an integer as a loglevel.
+
+
+
 
