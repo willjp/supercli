@@ -14,6 +14,7 @@ from   __future__    import unicode_literals
 from   __future__    import absolute_import
 from   numbers       import Number
 import logging
+import traceback
 import sys
 import re
 import os
@@ -67,6 +68,7 @@ class Blacklist(logging.Filter):
 
 
 
+
 # ==============
 # LogHander Mgmt
 # ==============
@@ -84,7 +86,8 @@ class SetLog( object ):
                     logstream      = True,
                     logfile_size   = 1000000, # 8Mb
                     debug_mode     = False,
-                    logfmt         = None,
+                    logfmt         = False,
+                    stack_logging  = False,
                     very_verbose   = False,
                 ):
         """
@@ -120,6 +123,7 @@ class SetLog( object ):
                        |                             |       |   w  = 'warn'
                        |                             |       |   d  = 'developper logging (caller-info instead of time)'
                        |                             |       |   l  = 'multiline logrecords'
+                       |                             |       |   s  = 'show 5x frames from log-callers stack'
                        |                             |       |
                        |                             |       |
                        |                             |       |
@@ -155,8 +159,19 @@ class SetLog( object ):
         debug_mode     | True, False                 | (opt) | Enable to Debug this class using print statements.
                        |                             |       | Not intended for production.
                        |                             |       |
-        logfmt         | None, 'long', 'dev',        | (opt) | Some optional logformat presets that you can use,
+        logfmt         | None, 'long', 'dev', 'stack'| (opt) | Some optional logformat presets that you can use,
                        | '%(message)s'               |       | or you can set your own lineformat here.
+                       |                             |       |
+                       |                             |       | None:  (1x line) time, level, message (good for users)
+                       |                             |       | long:  (2x lines) time, message, and module importpath
+                       |                             |       | dev:   (1x line) method name, level, message, and lineno
+                       |                             |       | stack: (many lines) same as dev, but with a default of
+                       |                             |       |        traceback (obeys stack_logging argument).
+                       |                             |       |        If stack_logging is not enabled, it will be made enabled.
+                       |                             |       |
+        stack_logging  | False, 5                    | (opt) | if `stack_logging` is enabled, logrecords gain the
+                       |                             |       | additional LogRecord attribute: '%(stack)s' that
+                       |                             |       | will print up to N records.
                        |                             |       |
         very_verbose   | True, False                 | (opt) | Disables log-filters
                        |                             |       |
@@ -175,15 +190,17 @@ class SetLog( object ):
         self.debug_mode      = debug_mode
 
         self.logfmt          = logfmt
+        self.stack_logging   = stack_logging
         self.very_verbose    = very_verbose
 
         ## Attributes
         self.is_maya = False        ## set to true if running python within maya (NOT mayapy)
 
-        self.linefmt_norm = '[ %(asctime)s ] %(levelname)-8s: %(message)s'
-        self.linefmt_dev  = '[ %(funcName)-35s ]ln%(lineno)-4s %(levelname)-8s: %(message)s'
-        self.linefmt_long = '[ %(asctime)s ] %(levelname)-8s: %(message)s\n[    ln %(lineno)-4s  ]              %(name)s.%(funcName)-90s \n'
-        self.datefmt      = '%Y/%m/%d |%I:%M %p|'
+        self.linefmt_norm  = '[ %(asctime)s ] %(levelname)-8s: %(message)s'
+        self.linefmt_dev   = '[ %(funcName)-35s ]ln%(lineno)-4s %(levelname)-8s: %(message)s'
+        self.linefmt_long  = '[ %(asctime)s ] %(levelname)-8s: %(message)s\n[    ln %(lineno)-4s  ]              %(name)s.%(funcName)-90s \n'
+        self.linefmt_stack = '[ %(asctime)s ] %(levelname)-8s: %(message)s\n[    ln %(lineno)-4s  ]              %(name)s.%(funcName)-90s \n%(stack)s'
+        self.datefmt       = '%Y/%m/%d |%I:%M %p|'
 
 
         self.main()
@@ -213,6 +230,18 @@ class SetLog( object ):
         ## logfile
         if self.logfile:
             self.logfile = os.path.realpath( self.logfile ).replace( '\\','/' )
+
+
+        if self.stack_logging != False:
+            if not isinstance( self.stack_logging, int ):
+                raise TypeError('expected False or an integer as a value for `stack_logging` argument')
+
+        elif self.logfmt:
+            if '%(stack)s' in self.logfmt:
+                raise RuntimeError(
+                    '`stack_logging` argument is set to False and custom `logfmt`  argument '
+                    'contains "%(stack)s"'
+                )
 
     def parse_logfmt_args(self):
         """
@@ -262,10 +291,15 @@ class SetLog( object ):
         elif 'd' in self.str_arg   or   self.logfmt == 'dev':
             self.linefmt = self.linefmt_dev
 
+        elif 's' in self.str_arg   or   self.logfmt == 'stack':
+            self.linefmt = self.linefmt_stack
+            if self.stack_logging == False:
+                self.stack_logging = 5
+
 
         ## allow user to set their own lineformat
         ##
-        if self.logfmt not in (None, 'dev', 'long'):
+        if self.logfmt not in (None, False, 'dev', 'long', 'stack'):
             self.linefmt = self.logfmt
 
 
@@ -310,11 +344,27 @@ class SetLog( object ):
         if self.logstream:
             handlers.extend( self._create_loghandler_stream() )
 
+        ## Add stack info to message (by wrapping handler)
+        if self.stack_logging != False:
+            for handler in handlers:
+                method = handler.handle
+
+                def handle_and_add_stackinfo(record):
+                    ## the logrecord is 5 levels deep, so we will
+                    ## trim off the top
+                    stack = ''.join(
+                        str(row) for row in traceback.format_stack(limit=self.stack_logging+5)[:-5]
+                    )
+                    record.stack = '\x1b[36m%s\x1b[0m' % stack
+                    return method(record)
+                handler.handle = handle_and_add_stackinfo
+
 
         self.logdebug('using handlers: %s' % repr(handlers))
         self._set_loglevel()
         self._set_logformat( handlers )
         self._set_filters(   handlers )
+
 
     def _create_loghandler_stream(self):
         """
@@ -427,6 +477,7 @@ class SetLog( object ):
                 handler.addFilter(
                             self.filter_type( self.filter_matches )
                         )
+
 
     def colorize_log(self):
         """
