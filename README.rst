@@ -152,12 +152,17 @@ and logformat.
    logger = logging.getLogger(__name__)
 
    ## loglevel
-   supercli.logging.SetLog('')    ## log to stderr (using loglevel==logging.INFO by default)
-                                  #  each logrecord is prefixed by the datetime
-   supercli.logging.SetLog('i')   ## loglevel==logging.INFO
-   supercli.logging.SetLog('w')   ## loglevel==logging.WARNING
-   supercli.logging.SetLog('v')   ## loglevel==logging.DEBUG
-   supercli.logging.SetLog('vv')  ## loglevel==logging.DEBUG and disable all logfilters
+   supercli.logging.SetLog( )                                        ## log to stderr (using loglevel==logging.INFO by default)
+                                                                     #  each logrecord is prefixed by the datetime
+   supercli.logging.SetLog(lv=10, logfmt='dev')                      ## print method names
+   supercli.logging.SetLog(lv=10, logfmt='long')                     ## print module import-path, method name, etc. uses 2x lines
+   supercli.logging.SetLog(lv=10, logfmt='stack')                    ## prints 5x levels of the stacktrace for each logrecord
+   supercli.logging.SetLog(lv=10, logfmt='stack', stack_logging=10 ) ## prints 10x levels of the stacktrace for each logrecord
+
+   supercli.logging.SetLog('i')                  ## loglevel==logging.INFO
+   supercli.logging.SetLog('w')                  ## loglevel==logging.WARNING
+   supercli.logging.SetLog('v')                  ## loglevel==logging.DEBUG
+   supercli.logging.SetLog('vv')                 ## loglevel==logging.DEBUG and disable all logfilters
 
    ## the long way
    supercli.logging.SetLog( lv='INFO' )
